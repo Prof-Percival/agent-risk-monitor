@@ -11,6 +11,8 @@ export const eventSchema = z.object({
 
 export type AgentEvent = z.infer<typeof eventSchema>;
 
+// Only the envelope. Validating the items here would reject the whole batch over one bad event,
+// which is the opposite of what the endpoint promises, so each item is checked as it is stored.
 export const batchSchema = z.object({
-  events: z.array(eventSchema).min(1).max(500),
+  events: z.array(z.unknown()).min(1).max(500),
 });

@@ -1,0 +1,22 @@
+[project]
+name = "agent-risk-e2e"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = ["pytest==8.3.4", "ruff==0.8.6"]
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]

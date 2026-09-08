@@ -65,4 +65,28 @@ curl -H "$KEY" 'http://localhost:8080/v1/agents/agent-7/timeline?hours=24'
 
 Everything is environment based, with local defaults in `compose.yaml`. See `.env.example`.
 
-`SOLUTION.md` covers the design and the trade-offs.
+## Tests
+
+Unit tests need nothing running. The rules are pure functions and the schemas are plain validation,
+so both suites are fast.
+
+```bash
+cd services/ingestion && npm ci && npm run lint && npm test
+cd services/analyzer  && pip install -e ".[dev]" && ruff check . && pytest -q
+```
+
+The end to end tests in `tests/e2e` are the ones that prove the two services actually meet. They post
+to the Node API and read back what the Python analyzer wrote, over HTTP only. One command brings the
+stack up, runs them, and tears it down:
+
+```bash
+./scripts/e2e.sh           # add --keep to leave the stack running
+```
+
+Against a stack that is already up:
+
+```bash
+pip install -e tests/e2e && pytest tests/e2e -q
+```
+
+CI runs all of the above on every push. `SOLUTION.md` covers the design and the trade-offs.

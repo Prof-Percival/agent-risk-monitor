@@ -40,4 +40,10 @@ describe('event validation', () => {
     expect(batchSchema.safeParse({ events: Array(501).fill(valid) }).success).toBe(false);
     expect(batchSchema.safeParse({ events: [valid] }).success).toBe(true);
   });
+
+  it('accepts a batch holding a bad item, so the endpoint can report on each one', () => {
+    const batch = { events: [valid, { nonsense: true }] };
+
+    expect(batchSchema.safeParse(batch).success).toBe(true);
+  });
 });
