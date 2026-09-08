@@ -8,8 +8,15 @@ CREATE TABLE IF NOT EXISTS agent_events (
     received_at  timestamptz NOT NULL DEFAULT now(),
     updated_at   timestamptz NOT NULL DEFAULT now(),
     tags         text[]      NOT NULL DEFAULT '{}',
-    payload      jsonb       NOT NULL
+    payload      jsonb       NOT NULL,
+    analyzed_at  timestamptz
 );
+
+-- The analyzer claims work with analyzed_at IS NULL OR analyzed_at < updated_at, which covers both a new
+-- event and one that changed after it was last looked at, and needs no separate cursor to fall behind.
+CREATE INDEX IF NOT EXISTS ix_agent_events_pending
+    ON agent_events (updated_at)
+    WHERE analyzed_at IS NULL OR analyzed_at < updated_at;
 
 -- occurred_at is the agent's clock and can arrive out of order. received_at is ours and only ever
 -- increases, so it is what the analyzer and the timeline order by when the two disagree.

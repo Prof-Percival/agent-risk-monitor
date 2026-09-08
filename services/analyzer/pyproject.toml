@@ -1,0 +1,29 @@
+[project]
+name = "agent-risk-analyzer"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = ["psycopg[binary]==3.2.3"]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.4", "ruff==0.8.6"]
+
+[project.scripts]
+analyzer = "analyzer.__main__:main"
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
