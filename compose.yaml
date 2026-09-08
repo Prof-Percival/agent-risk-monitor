@@ -16,16 +16,12 @@ services:
       retries: 20
 
   migrate:
-    image: postgres:17-alpine
+    build: ./db
     depends_on:
       db:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-kyber}:${POSTGRES_PASSWORD:-kyber}@db:5432/${POSTGRES_DB:-kyber}
-    volumes:
-      - ./db/migrations:/migrations:ro
-      - ./db/migrate.sh:/migrate.sh:ro
-    entrypoint: ["sh", "/migrate.sh"]
 
   ingestion:
     build: ./services/ingestion

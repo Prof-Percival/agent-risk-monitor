@@ -41,7 +41,7 @@ export async function recentAlerts(
 ): Promise<AlertRow[]> {
   const result = await pool.query<AlertRow>(
     `SELECT alert_id, event_id, agent_id, rule, severity, summary, created_at
-     FROM alerts
+     FROM agent_alerts
      WHERE created_at >= now() - make_interval(hours => $1)
        AND ($2::text IS NULL OR agent_id = $2)
        AND ($3::text IS NULL OR rule = $3)
@@ -71,7 +71,7 @@ export async function agentSummary(pool: Pool, agentId: string, hours: number): 
      ),
      agent_alerts AS (
          SELECT a.rule, a.severity
-         FROM alerts a, window_bounds w
+         FROM agent_alerts a, window_bounds w
          WHERE a.agent_id = $1 AND a.created_at BETWEEN w.starts_at AND w.ends_at
      )
      SELECT
@@ -126,7 +126,7 @@ export async function agentTimeline(
      UNION ALL
      SELECT created_at AS timestamp, 'alert' AS kind, alert_id::text AS reference_id,
             severity || ': ' || summary AS brief
-     FROM alerts
+     FROM agent_alerts
      WHERE agent_id = $1 AND created_at >= now() - make_interval(hours => $2)
      ORDER BY timestamp DESC
      LIMIT $3`,

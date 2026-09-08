@@ -27,7 +27,7 @@ WHERE agent_id = %s
 # One alert per event per rule, enforced by the database rather than by checking first, so
 # re-analysis updates the wording instead of stacking duplicates.
 UPSERT_ALERT = """
-INSERT INTO alerts (event_id, agent_id, rule, severity, summary, details)
+INSERT INTO agent_alerts (event_id, agent_id, rule, severity, summary, details)
 VALUES (%s, %s, %s, %s, %s, %s)
 ON CONFLICT (event_id, rule) DO UPDATE
 SET severity = EXCLUDED.severity,

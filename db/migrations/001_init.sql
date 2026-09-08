@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS ix_agent_events_updated
 CREATE INDEX IF NOT EXISTS ix_agent_events_type
     ON agent_events (event_type);
 
-CREATE TABLE IF NOT EXISTS alerts (
+CREATE TABLE IF NOT EXISTS agent_alerts (
     alert_id   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id   text        NOT NULL REFERENCES agent_events (event_id) ON DELETE CASCADE,
     agent_id   text        NOT NULL,
@@ -41,11 +41,11 @@ CREATE TABLE IF NOT EXISTS alerts (
     UNIQUE (event_id, rule)
 );
 
-CREATE INDEX IF NOT EXISTS ix_alerts_created
-    ON alerts (created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_agent_alerts_created
+    ON agent_alerts (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS ix_alerts_agent_created
-    ON alerts (agent_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_agent_alerts_agent_created
+    ON agent_alerts (agent_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS ix_alerts_rule
-    ON alerts (rule);
+CREATE INDEX IF NOT EXISTS ix_agent_alerts_rule
+    ON agent_alerts (rule);
