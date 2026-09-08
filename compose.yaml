@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kyber}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kyber}
+      POSTGRES_DB: ${POSTGRES_DB:-kyber}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kyber} -d ${POSTGRES_DB:-kyber}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    image: postgres:17-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kyber}:${POSTGRES_PASSWORD:-kyber}@db:5432/${POSTGRES_DB:-kyber}
+    volumes:
+      - ./db/migrations:/migrations:ro
+      - ./db/migrate.sh:/migrate.sh:ro
+    entrypoint: ["sh", "/migrate.sh"]
+
+  ingestion:
+    build: ./services/ingestion
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kyber}:${POSTGRES_PASSWORD:-kyber}@db:5432/${POSTGRES_DB:-kyber}
+      PORT: 8080
+      API_KEYS: ${API_KEYS:-dev-agent-key-0000000001:demo-agent,dev-dashboard-key-000001:dashboard}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${INGESTION_PORT:-8080}:8080"
+
+  analyzer:
+    build: ./services/analyzer
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kyber}:${POSTGRES_PASSWORD:-kyber}@db:5432/${POSTGRES_DB:-kyber}
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS:-api.openai.com,api.anthropic.com,github.com,pypi.org,registry.npmjs.org}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    command: ["watch", "--interval", "5"]
+
+volumes:
+  pgdata:
