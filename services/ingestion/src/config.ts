@@ -7,6 +7,7 @@ const schema = z.object({
   API_KEYS: z.string().min(1),
   BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(512 * 1024),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  CONNECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
 });
 
 export type Config = {
@@ -15,6 +16,7 @@ export type Config = {
   logLevel: string;
   bodyLimitBytes: number;
   requestTimeoutMs: number;
+  connectionTimeoutMs: number;
   clientsByKey: Map<string, string>;
 };
 
@@ -59,6 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     logLevel: parsed.data.LOG_LEVEL,
     bodyLimitBytes: parsed.data.BODY_LIMIT_BYTES,
     requestTimeoutMs: parsed.data.REQUEST_TIMEOUT_MS,
+    connectionTimeoutMs: parsed.data.CONNECTION_TIMEOUT_MS,
     clientsByKey: parseKeys(parsed.data.API_KEYS),
   };
 }

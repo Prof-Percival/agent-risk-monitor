@@ -32,6 +32,45 @@ docker compose down -v              # stop and delete the data
 The database is published on port 5433 rather than 5432 so it does not fight a PostgreSQL already
 installed on the machine.
 
+## Loading some data to look at
+
+A fresh stack is empty. This posts a scenario that trips every rule, plus an agent whose activity is
+ordinary and must stay quiet:
+
+```bash
+./scripts/seed.sh
+```
+
+It goes through the HTTP API, not SQL, so everything it creates has been through validation and the
+analyzer. Running it twice changes nothing, as the event ids are fixed.
+
+## Inspecting the database
+
+The database runs in a container but its port is published, so any client on the host can reach it.
+Nothing appears automatically in a tool you already have: register a connection using these details.
+
+| Setting | Value |
+|---|---|
+| Host | `localhost` |
+| Port | `5433` |
+| Database | `kyber` |
+| Username | `kyber` |
+| Password | `kyber` |
+
+In pgAdmin that is Register, then Server. This adds one entry alongside whatever servers you already
+have and touches none of them. If your pgAdmin is itself running in a container, use
+`host.docker.internal` instead of `localhost`, because `localhost` there means the pgAdmin container.
+
+On the command line, without installing anything:
+
+```bash
+docker compose exec db psql -U kyber -d kyber -c '\dt'
+docker compose exec db psql -U kyber -d kyber -c 'SELECT rule, severity, count(*) FROM agent_alerts GROUP BY 1, 2 ORDER BY 1;'
+```
+
+Data lives in a named volume, so `docker compose stop` and `docker compose up` keep it. Only
+`docker compose down -v` deletes it.
+
 ## Sending an event
 
 Every endpoint except the health probes needs an API key.
@@ -82,6 +121,10 @@ stack up, runs them, and tears it down:
 ```bash
 ./scripts/e2e.sh           # add --keep to leave the stack running
 ```
+
+They also cover the two limits the brief sets, which no unit test can see: a body of a few hundred
+kilobytes is accepted, one past the limit is refused, and a client that declares a body then stalls
+gets closed rather than held open.
 
 Against a stack that is already up:
 

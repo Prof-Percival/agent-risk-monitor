@@ -16,7 +16,11 @@ export function buildServer(config: Config, pool: Pool): FastifyInstance {
   const app = Fastify({
     logger: { level: config.logLevel },
     bodyLimit: config.bodyLimitBytes,
+    // requestTimeout caps a whole request, but Node only sweeps for expired ones every 30 seconds,
+    // so on its own a client that sends a Content-Length and then stalls sits there. connectionTimeout
+    // is a per socket timer and is what actually closes it.
     requestTimeout: config.requestTimeoutMs,
+    connectionTimeout: config.connectionTimeoutMs,
     disableRequestLogging: false,
   });
 
