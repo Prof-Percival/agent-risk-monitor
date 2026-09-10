@@ -101,6 +101,17 @@ curl -H "$KEY" 'http://localhost:8080/v1/agents/agent-7/summary?hours=24'
 curl -H "$KEY" 'http://localhost:8080/v1/agents/agent-7/timeline?hours=24'
 ```
 
+In PowerShell, `curl` is an alias for `Invoke-WebRequest`, which takes `-Headers` with a hashtable
+rather than `-H` with a string, so the commands above fail on the header. Use `curl.exe` to get the real
+curl, or the native equivalent:
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:8080/v1/alerts?hours=24' `
+  -Headers @{ 'X-Api-Key' = 'dev-dashboard-key-000001' } | ConvertTo-Json -Depth 6
+```
+
+`scripts/seed.py` prints whichever form suits the platform it ran on.
+
 ## Configuration
 
 Everything is environment based, with local defaults in `compose.yaml`. See `.env.example`.

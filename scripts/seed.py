@@ -173,6 +173,37 @@ def alert_count() -> int:
     return body["count"] if status == 200 else 0
 
 
+QUERIES = [
+    "/v1/alerts?hours=24",
+    "/v1/agents/checkout-agent/summary?hours=24",
+    "/v1/agents/billing-agent/timeline?hours=24",
+]
+
+
+def print_hints() -> None:
+    """Prints commands that actually run on the platform doing the reading.
+
+    On Windows, `curl` in PowerShell is an alias for Invoke-WebRequest, whose -Headers wants a
+    hashtable, so a copied curl command fails on the header rather than doing anything useful.
+    """
+    print("\nTry:")
+
+    if os.name == "nt":
+        for path in QUERIES:
+            print(
+                f"  Invoke-RestMethod -Uri '{BASE_URL}{path}'"
+                f" -Headers @{{ 'X-Api-Key' = '{DASHBOARD_KEY}' }} | ConvertTo-Json -Depth 6"
+            )
+        print("\n  Or, if you prefer curl, call curl.exe so PowerShell does not alias it:")
+        print(f'  curl.exe -H "X-Api-Key: {DASHBOARD_KEY}" "{BASE_URL}{QUERIES[0]}"')
+    else:
+        for path in QUERIES:
+            print(
+                f"  curl -H 'X-Api-Key: {DASHBOARD_KEY}' '{BASE_URL}{path}'"
+                " | python3 -m json.tool"
+            )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -216,13 +247,7 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    print(
-        f"""
-Try:
-  curl -H 'X-Api-Key: {DASHBOARD_KEY}' '{BASE_URL}/v1/alerts?hours=24'
-  curl -H 'X-Api-Key: {DASHBOARD_KEY}' '{BASE_URL}/v1/agents/checkout-agent/summary?hours=24'
-  curl -H 'X-Api-Key: {DASHBOARD_KEY}' '{BASE_URL}/v1/agents/billing-agent/timeline?hours=24'"""
-    )
+    print_hints()
 
     return 0
 
