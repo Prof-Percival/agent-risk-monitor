@@ -38,11 +38,12 @@ A fresh stack is empty. This posts a scenario that trips every rule, plus an age
 ordinary and must stay quiet:
 
 ```bash
-./scripts/seed.sh
+python3 scripts/seed.py
 ```
 
 It goes through the HTTP API, not SQL, so everything it creates has been through validation and the
-analyzer. Running it twice changes nothing, as the event ids are fixed.
+analyzer. Running it twice changes nothing, as the event ids are fixed. Standard library only, so there
+is nothing to install.
 
 ## Inspecting the database
 
@@ -121,6 +122,9 @@ stack up, runs them, and tears it down:
 ```bash
 ./scripts/e2e.sh           # add --keep to leave the stack running
 ```
+
+On Windows, run it as `bash scripts/e2e.sh`. Invoking a `.sh` file directly from PowerShell or cmd
+hands it to Git Bash in a separate window that closes on exit, taking the output with it.
 
 They also cover the two limits the brief sets, which no unit test can see: a body of a few hundred
 kilobytes is accepted, one past the limit is refused, and a client that declares a body then stalls
